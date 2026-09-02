@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+streamlit
+mlflow
+numpy
+pandas
+scikit-learn
+scipy
+sentence-transformers
+python-dotenv
+
