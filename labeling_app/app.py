@@ -3,6 +3,7 @@ pantalla para cargar y etiquetar publicaciones del feed
 """
 
 import hashlib
+import html
 import json
 from pathlib import Path
 
@@ -55,8 +56,8 @@ def load_feed_posts(raw_data_dir:Path) -> list[dict]:
             if post.get("fuente") != "linkedin_feed":
                 continue
 
-            description  = str(post.get("descripcion", "")).strip()
-            author_profile = str(post.get("autor_perfil", "")).strip()
+            description = normalize_text(post.get("descripcion"))
+            author_profile = normalize_text(post.get("autor_perfil"))
 
             if not description:
                 continue
@@ -129,6 +130,15 @@ def apply_automatic_labels(posts: list[dict], labels: dict) -> bool:
 
     return labels_changed
 
+
+def normalize_text(value: object) -> str:
+    """Convierte un valor recibido del JSON en texto limpio."""
+    if value is None:
+        return ""
+
+    return str(value).strip()
+
+
 ## punto de entrada
 def main() -> None:
     """Muestra la aplicación de etiquetado."""
@@ -160,9 +170,42 @@ def main() -> None:
     #  Tomamos los primeros 120 caracteres como título
     title = description.splitlines()[0][:120]
 
-    st.subheader(title)
-    st.caption(f"Autor: {post['autor_perfil'] or 'No disponible'}")
-    st.write(description)
+    st.markdown(
+        """
+        <style>
+        div[data-testid="stHorizontalBlock"] div[data-testid="stColumn"]:nth-child(1) button {
+            background-color: #198754 !important;
+            color: white !important;
+            border: 1px solid #198754 !important;
+        }
+
+        div[data-testid="stHorizontalBlock"] div[data-testid="stColumn"]:nth-child(1) button:hover {
+            background-color: #146c43 !important;
+            border-color: #146c43 !important;
+            color: white !important;
+        }
+
+        div[data-testid="stHorizontalBlock"] div[data-testid="stColumn"]:nth-child(2) button {
+            background-color: #dc3545 !important;
+            color: white !important;
+            border: 1px solid #dc3545 !important;
+        }
+
+        div[data-testid="stHorizontalBlock"] div[data-testid="stColumn"]:nth-child(2) button:hover {
+            background-color: #b02a37 !important;
+            border-color: #b02a37 !important;
+            color: white !important;
+        }
+
+        .post-description {
+            font-size: 1.15rem;
+            font-weight: 700;
+            line-height: 1.7;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
 
     first_column, second_column = st.columns(2)
 
@@ -185,6 +228,15 @@ def main() -> None:
             )
             save_labels(labels, LABELS_FILE)
             st.rerun()
+
+    st.subheader(title)
+    st.caption(f"Autor: {post['autor_perfil'] or 'No disponible'}")
+
+    safe_description = html.escape(description).replace("\n", "<br>")
+    st.markdown(
+        f'<div class="post-description">{safe_description}</div>',
+        unsafe_allow_html=True,
+    )
 
 if __name__ == "__main__":
     main()
